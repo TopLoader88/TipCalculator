@@ -1,0 +1,34 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Tip calculator: live preview",
+			"type": "shell",
+			"command": "npm",
+			"args": [
+				"run",
+				"web",
+				"--",
+				"--port",
+				"8085"
+			],
+			"isBackground": true,
+			"problemMatcher": []
+		},
+		{
+			"label": "Tip calculator: tax preview",
+			"type": "shell",
+			"command": "npm",
+			"args": [
+				"run",
+				"web",
+				"--",
+				"--port",
+				"8086",
+				"--clear"
+			],
+			"isBackground": true,
+			"problemMatcher": []
+		}
+	]
+}

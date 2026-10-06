@@ -1,0 +1,37 @@
+{
+  "expo": {
+    "name": "Tip, please.",
+    "slug": "tip-please",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/tip-icon.png",
+    "userInterfaceStyle": "light",
+    "plugins": [
+      "expo-font",
+      ["expo-location", {
+        "locationWhenInUsePermission": "Find your country for local tipping guidance only when you request it.",
+        "isAndroidBackgroundLocationEnabled": false,
+        "isAndroidForegroundServiceEnabled": false
+      }]
+    ],
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "package": "com.tipplease.calculator",
+      "versionCode": 1,
+      "softwareKeyboardLayoutMode": "resize",
+      "blockedPermissions": ["android.permission.ACCESS_BACKGROUND_LOCATION", "android.permission.RECORD_AUDIO"],
+      "adaptiveIcon": {
+        "backgroundColor": "#E6F3EB",
+        "foregroundImage": "./assets/tip-foreground.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/tip-favicon.png",
+      "name": "Tip, please.",
+      "shortName": "Tip, please."
+    }
+  }
+}
