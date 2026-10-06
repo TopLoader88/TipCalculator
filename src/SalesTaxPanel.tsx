@@ -1,9 +1,10 @@
-import { useState } from 'react';
-import { Linking, Pressable, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, Linking, Platform, Pressable, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 import Feather from '@expo/vector-icons/Feather';
 import { formatMoney, parseAmount } from './calculator';
 import { calculateSalesTax, parseTaxRate, type TaxMode } from './salesTax';
 import { countryTaxGuides, findTaxGuide, PRIVATE_CAVEAT, privateVehicleSources, STATE_RATE_DATE, STATE_SOURCE, stateRates, TAX_REVIEWED } from './taxGuidance';
+import { getTaxDeviceLocation } from './taxDeviceLocation';
 
 export function SalesTaxPanel({ regionCode, fontsLoaded }: { regionCode: string | null; fontsLoaded: boolean }) {
   const [country, setCountry] = useState(regionCode ?? 'US');
@@ -17,6 +18,10 @@ export function SalesTaxPanel({ regionCode, fontsLoaded }: { regionCode: string 
   const [stateSearch, setStateSearch] = useState('');
   const [sourceError, setSourceError] = useState('');
   const [currencyText, setCurrencyText] = useState('USD');
+  const [locating, setLocating] = useState(false);
+  const [locationMessage, setLocationMessage] = useState('');
+  const [detectedState, setDetectedState] = useState<typeof stateRates[number] | null>(null);
+  const activeLookup = useRef<AbortController | null>(null);
   const guide = findTaxGuide(country);
   const currency = country === 'OTHER' ? currencyText.toUpperCase() : guide.currency;
   let currencyValid = /^[A-Z]{3}$/.test(currency);
@@ -32,6 +37,74 @@ export function SalesTaxPanel({ regionCode, fontsLoaded }: { regionCode: string 
   const font = { fontFamily: fontsLoaded ? 'Manrope' : undefined };
   const heading = { fontFamily: fontsLoaded ? 'ManropeSemi' : undefined };
 
+  useEffect(() => () => {
+    const controller = activeLookup.current;
+    activeLookup.current = null;
+    controller?.abort();
+  }, []);
+
+  function cancelLookup() {
+    activeLookup.current?.abort();
+    activeLookup.current = null;
+    setLocating(false);
+    setLocationMessage('');
+    setDetectedState(null);
+  }
+
+  async function locateState() {
+    if (activeLookup.current) return;
+    const controller = new AbortController();
+    activeLookup.current = controller;
+    setLocating(true);
+    setLocationMessage('');
+    setDetectedState(null);
+    let timedOut = false;
+    const timer = setTimeout(() => { timedOut = true; controller.abort(); }, 20000);
+    try {
+      const detected = await getTaxDeviceLocation(controller.signal);
+      if (controller.signal.aborted) return;
+      if (!detected.countryCode) {
+        setLocationMessage('No supported US state was found. Browser lookup covers US states only. Search states or choose your country manually; your selection and rate are unchanged.');
+        return;
+      }
+      const nextGuide = findTaxGuide(detected.countryCode);
+      if (nextGuide.code === 'OTHER') {
+        setLocationMessage('Tax guidance is not available for the detected country. Choose a country or manual rate; your selection and rate are unchanged.');
+        return;
+      }
+      if (detected.countryCode !== country) {
+        if (nextGuide.currency !== currency) setAmountText('');
+        setCountry(nextGuide.code);
+        setRateText('');
+      }
+      setChoosingCountry(false);
+      setSearch('');
+      if (detected.state) {
+        setDetectedState(detected.state);
+        setStateSearch(detected.state[0]);
+        setShowStates(true);
+        setLocationMessage(`Found ${detected.state[1]}. Confirm the state, then check local taxes. No rate was applied automatically.`);
+      } else {
+        setShowStates(detected.countryCode === 'US');
+        setStateSearch('');
+        setLocationMessage(detected.countryCode === 'US'
+          ? 'Found United States, but could not identify the state. Search states manually below.'
+          : `Found ${nextGuide.name}. US state taxes do not apply to this location. Confirm the applicable local tax separately.`);
+      }
+    } catch (error) {
+      if (activeLookup.current !== controller) return;
+      setLocationMessage(timedOut
+        ? 'Location lookup timed out. Try again or search states manually below.'
+        : error instanceof Error ? error.message : 'Could not find your state. Search states manually below.');
+    } finally {
+      clearTimeout(timer);
+      if (activeLookup.current === controller) {
+        activeLookup.current = null;
+        setLocating(false);
+      }
+    }
+  }
+
   async function openSource(url: string) {
     setSourceError('');
     try { await Linking.openURL(url); }
@@ -39,6 +112,18 @@ export function SalesTaxPanel({ regionCode, fontsLoaded }: { regionCode: string 
   }
 
   return <View style={styles.content}>
+    <Text style={[styles.note, font]}>{Platform.OS === 'web'
+      ? 'Optional US state lookup using browser location and bundled state boundaries. Coordinates stay in this browser and are not saved or sent to a geocoder.'
+      : 'Optional country and state lookup using device location services. Native geocoding may require internet. Coordinates and your detected state are not saved.'}</Text>
+    <Pressable accessibilityRole="button" accessibilityLabel="Use location for state tax" disabled={locating} onPress={locateState}
+      style={[styles.locationButton, locating && styles.disabled]}>
+      {locating ? <ActivityIndicator color="#146D4D" /> : <Feather name="navigation" size={18} color="#146D4D" />}
+      <Text style={[styles.link, heading]}>{locating ? 'Finding state...' : 'Use location for state tax'}</Text>
+    </Pressable>
+    {!!locationMessage && <Text accessibilityRole="alert" style={[styles.note, font]}>{locationMessage}</Text>}
+    {detectedState && <Text accessibilityLabel={`Detected state ${detectedState[1]}`} style={[styles.text, heading]}>
+      {detectedState[1]} statewide reference: {detectedState[2]}% (as of {STATE_RATE_DATE})
+    </Text>}
     <Pressable accessibilityRole="button" accessibilityLabel="Choose tax country" onPress={() => setChoosingCountry(!choosingCountry)} style={styles.row}>
       <Text style={[styles.text, heading, styles.grow]}>{guide.name} / {currency}</Text>
       <Feather name={choosingCountry ? 'chevron-up' : 'chevron-down'} size={20} color="#146D4D" />
@@ -48,6 +133,7 @@ export function SalesTaxPanel({ regionCode, fontsLoaded }: { regionCode: string 
       {countryTaxGuides.filter(option => `${option.name} ${option.code}`.toLowerCase().includes(search.toLowerCase())).map(option => (
         <Pressable key={option.code} accessibilityRole="radio" accessibilityLabel={option.name}
           accessibilityState={{ checked: option.code === country }} style={styles.row} onPress={() => {
+            cancelLookup();
             if (option.currency !== guide.currency || option.code === 'OTHER') setAmountText('');
             setCountry(option.code); setChoosingCountry(false); setRateText(''); setSearch(''); setShowStates(false);
           }}>
@@ -107,7 +193,10 @@ export function SalesTaxPanel({ regionCode, fontsLoaded }: { regionCode: string 
       {showStates && <>
         <Text style={[styles.note, font]}>Snapshot as of {STATE_RATE_DATE}. Reference only: these rates are not automatically used in the calculation.</Text>
         <TextInput accessibilityLabel="Search states" placeholder="State name or abbreviation" value={stateSearch} onChangeText={setStateSearch} style={[styles.input, font]} />
-        {stateRates.filter(([code, name]) => `${code} ${name}`.toLowerCase().includes(stateSearch.toLowerCase())).map(([code, name, rateValue]) => <View key={code} style={styles.row}>
+        {stateRates.filter(([code, name]) => {
+          const query = stateSearch.trim().toLowerCase();
+          return query.length === 2 ? code.toLowerCase() === query : name.toLowerCase().includes(query);
+        }).map(([code, name, rateValue]) => <View key={code} style={styles.row}>
           <Text style={[styles.text, font, styles.grow]}>{name}</Text><Text style={[styles.text, heading]}>{rateValue}%</Text>
         </View>)}
         <Pressable accessibilityRole="link" accessibilityLabel="State tax reference source" onPress={() => openSource(STATE_SOURCE)} style={styles.row}>
@@ -146,4 +235,6 @@ const styles = StyleSheet.create({
   referenceTitle: { fontSize: 16, color: '#202624', marginTop: 14 },
   link: { fontSize: 13, color: '#146D4D', lineHeight: 20 },
   reference: { gap: 8, marginTop: 12 },
+  locationButton: { flexDirection: 'row', gap: 10, minHeight: 50, alignItems: 'center', justifyContent: 'center', padding: 12, borderWidth: 1, borderColor: '#BBD4C5', backgroundColor: '#E6F3EB', borderRadius: 6 },
+  disabled: { opacity: 0.5 },
 });

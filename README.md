@@ -10,6 +10,10 @@ Open **Split bill & tax** for equal shares and receipt-tax exclusion. Each perso
 
 Open **Sales tax & private purchases** within that panel to calculate sales/use tax on a separately entered purchase. Choose **Add tax** for a before-tax price or **Tax included** to extract existing tax. Enter a confirmed applicable rate; blank means unknown, not zero. No tip is added by this tool, and it does not alter the restaurant bill or saved tip percentage.
 
+**Use location for state tax** in the sales-tax panel finds the matching state reference after you explicitly allow location. In the browser, this uses bundled US state boundaries and does not send coordinates to a geocoding service. Browser lookup requires HTTPS or localhost and covers the US only. Android uses native country/state reverse geocoding, which may require internet. Detected states and coordinates are kept only for the open panel, never saved. The entered tax rate is not automatically replaced. A country change clears a previously entered rate and clears the purchase amount if the currency changes. If access is denied, lookup times out, or coverage is missing, manual country/state search remains available.
+
+Bundled boundaries come from [US Atlas](https://github.com/topojson/us-atlas), with point-in-boundary checks performed by D3 Geo and TopoJSON. These are approximate geographic boundaries, not address-level tax jurisdiction boundaries. Confirm the state, especially near borders; district and local rates still need separate verification.
+
 Private-party purchase mode shows jurisdiction and item-type warnings. It does not determine exemptions or legal tax liability. Vehicles can use special taxable values, use taxes and registration rules. Enter the confirmed taxable amount, not necessarily the cash price. Fees, credits, mixed-rate items and special valuation rules are not calculated automatically.
 
 ## Tax reference coverage

@@ -5,6 +5,7 @@
 - First-launch percentage is 15%. Persist the last selected percentage, including custom and zero values.
 - Split, tax exclusion, and location guidance belong in optional panels. Never request location at launch.
 - Location must never override the saved percentage. Save only the selected country, never coordinates.
+- State-tax lookup is opt-in within the sales-tax panel. Browser state lookup uses offline US boundaries; never persist detected states or coordinates or apply reference rates automatically.
 - Calculate in integer minor currency units. Split receipt and tip exactly, assigning remainders explicitly.
 - Do not infer receipt tax or included service charges from location.
 - Sales/use tax estimates are separate from tip calculations. Require an explicit applicable rate; never infer private-sale exemptions.
