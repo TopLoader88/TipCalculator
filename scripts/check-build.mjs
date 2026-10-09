@@ -3,6 +3,7 @@ import { readFile, access } from 'node:fs/promises';
 import { parse } from 'yaml';
 
 const { expo } = JSON.parse(await readFile('app.json', 'utf8'));
+assert.ok(!expo.name.startsWith('.') && !expo.name.endsWith('.'), 'Native project name cannot start or end with a period');
 for (const path of [expo.icon, expo.android.adaptiveIcon.foregroundImage, expo.web.favicon]) await access(path);
 assert.equal(expo.android.package, 'com.tipplease.calculator');
 assert.ok(expo.android.blockedPermissions.includes('android.permission.ACCESS_BACKGROUND_LOCATION'));
