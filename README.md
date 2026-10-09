@@ -4,6 +4,16 @@ Android-first tip calculator built with Expo and TypeScript. The opening screen 
 
 ## Try it
 
+### Free iPhone and Browser Testing
+
+Open [the public web calculator](https://TopLoader88.github.io/TipCalculator/) in Safari on iPhone or any modern browser. No account, subscription, Apple developer membership or payment is required. GitHub Pages hosting is free for this public repository.
+
+On iPhone, use Safari's **Share > Add to Home Screen** to add a convenient shortcut. This is the browser version, not a native App Store app. Internet is required to load it; offline startup is not guaranteed and no service worker is installed. Browser storage remembers the tip percentage, but clearing site data or private browsing can remove saved settings.
+
+The main calculator, splitting, custom percentages and sales-tax estimates use the shared app code. Browser state lookup uses HTTPS geolocation and offline US boundaries after explicit permission. Automatic country lookup in the tipping-culture panel remains native-only; select a country manually there. This deployment does not change the existing Android APK.
+
+The **Web Preview** workflow deploys on pushes to `main`. `npm run build:web` exports the browser app; set `WEB_BASE_PATH=/TipCalculator` when exporting for this GitHub Pages site. Leave it unset for root-hosted/local exports. The workflow sets it automatically and requires Pages to use GitHub Actions as its build source.
+
 Run `npm ci`, then `npm run web -- --port 8086` for the browser preview. The VS Code task **Tip calculator: tax preview** starts the same preview. Android is the distribution target; browser preview does not support automatic country lookup.
 
 Open **Split bill & tax** for equal shares and receipt-tax exclusion. Each person's bill and tip are divided in integer minor units, with remainders assigned explicitly.
@@ -32,7 +42,7 @@ Location is optional and requested only from its panel. Only the country choice 
 
 The **Android APK** GitHub Actions workflow runs on pushes to `main` and can be started manually. It installs dependencies, runs checks, generates native Android files, builds a bundled release APK with test signing, and uploads an artifact named `tip-please-android`.
 
-Push a version tag such as `v0.1.0` to create a prerelease with a directly downloadable `tip-please-android.apk`. In a private repository, sign in to the permitted GitHub account on your phone, open **Releases**, and download the APK. Allow installation from that browser when Android asks. Core calculations work without Expo Go or a computer after installation. Device lookup and external source links may need internet.
+Push a version tag such as `v0.1.0` to create a prerelease with a directly downloadable `tip-please-android.apk`. The repository is public for testers: open **Releases** on your phone and download the APK without signing in. Allow installation from that browser when Android asks. Core calculations work without Expo Go or a computer after installation. Device lookup and external source links may need internet.
 
 Builds include ARM64 phone and x86_64 emulator support. Android 7+ is required by this React Native version. This is a preview APK, not a Play Store production release. The generated debug signing key is for testing only; protect a dedicated production key for store distribution. Preview data/signing continuity must be planned before moving to production.
 

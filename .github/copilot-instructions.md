@@ -1,6 +1,6 @@
 # Tip, Please
 
-- Android-first Expo React Native TypeScript app. Web is a preview, not the distribution target.
+- Android-first Expo React Native TypeScript app. GitHub Pages offers free web testing for iPhone users, not a native iOS release. Web export base path is environment-scoped; keep Android and local preview unaffected.
 - Keep the opening screen limited to bill total, tip presets/custom percentage, receipt tip, and total.
 - First-launch percentage is 15%. Persist the last selected percentage, including custom and zero values.
 - Split, tax exclusion, and location guidance belong in optional panels. Never request location at launch.

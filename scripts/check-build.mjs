@@ -12,7 +12,12 @@ assert.equal(workflow.jobs.build.steps.find(step => step.uses === 'android-actio
 assert.ok(workflow.on.workflow_dispatch !== undefined);
 assert.ok(workflow.jobs.build.steps.some(step => step.run?.includes('assembleRelease')));
 assert.equal(workflow.jobs.release.permissions.contents, 'write');
+const webWorkflow = parse(await readFile('.github/workflows/web.yml', 'utf8'));
+assert.equal(webWorkflow.jobs.build.steps.find(step => step.name === 'Export web app')?.env?.WEB_BASE_PATH, '/TipCalculator');
+assert.equal(webWorkflow.jobs.deploy.permissions.pages, 'write');
+assert.equal(webWorkflow.jobs.deploy.permissions['id-token'], 'write');
+assert.ok(webWorkflow.jobs.build.steps.some(step => step.uses === 'actions/upload-pages-artifact@v3'));
 const eas = JSON.parse(await readFile('eas.json', 'utf8'));
 assert.equal(eas.build.preview.android.buildType, 'apk');
 assert.equal(eas.build.production.android.buildType, 'app-bundle');
-console.log('App assets, permissions, GitHub APK workflow, and store build profiles are valid.');
+console.log('App assets, permissions, Android APK and GitHub Pages workflows, and store build profiles are valid.');
